@@ -1,69 +1,55 @@
-class State:
-    def __init__(self, index):
-        self.id = index
+import unittest
+from automat import *
 
-    def __eq__(self, other):
-        return isinstance(other, State) and self.id == other.id
+class TestNFA(unittest.TestCase):
+    def setUp(self):
+        self.state0 = State(0)
+        self.state1 = State(1)
+        self.state2 = State(2)
+        self.state3 = State(3)
 
-    def __hash__(self):
-        return hash(self.id)
+        self.states = [self.state0, self.state1, self.state2, self.state3]
+        self.alphabet = ['a', 'b']
+        self.start_state = self.state0
+        self.final_states = [self.state3]
 
-    def __repr__(self):
-        return f"State({self.id})"
+        self.transitions = [
+            Transition(self.state0, self.state1, 'a'),
+            Transition(self.state1, self.state2, 'b'),
+            Transition(self.state2, self.state3, 'a'),
+            Transition(self.state0, self.state3, 'ε'),
+            Transition(self.state3, self.state1, 'b')
+        ]
 
+        self.nfa = NFA(self.states, self.alphabet, self.transitions, self.start_state, self.final_states)
 
-class Transition:
-    def __init__(self, state_out, state_in, word):
-        self.state_out = state_out
-        self.state_in = state_in
-        self.word = word
+    def test_to_DFA(self):
+        dfa = self.nfa.to_DFA()
 
-    def __repr__(self):
-        return f"Transition({self.state_out}, {self.state_in}, '{self.word}')"
+        self.assertGreaterEqual(len(dfa.states), 1)
+        self.assertIsNotNone(dfa.start_state)
 
-    def __eq__(self, other):
-        return self.__repr__() == other.__repr__()
+        expected_transitions = [
+            Transition(State(0), State(1), 'a'),
+            Transition(State(1), State(2), 'b'),
+            Transition(State(2), State(3), 'a'),
+            Transition(State(0), State(1), 'b'),
+        ]
 
-    def __ne__(self, other):
-        return self.__repr__() != other.__repr__()
+        for et in expected_transitions:
+            self.assertIn(et, dfa.transitions)
 
+        self.assertIn(dfa.final_states[0], dfa.states)
 
-class Alphabet:
-    def __init__(self, letters):
-        self.letters = letters
+    def test_dfa_no_epsilon_transitions(self):
+        dfa = self.nfa.to_DFA()
+        for transition in dfa.transitions:
+            self.assertNotEqual(transition.word, 'ε')
 
+    def test_dfa_final_states(self):
+        dfa = self.nfa.to_DFA()
+        self.assertGreaterEqual(len(dfa.final_states), 1)
 
-class RegularExpression:
-    def __init__(self, pattern):
-        self.pattern = pattern
-
-
-class DFA:
-    def __init__(self, states, alphabet, transitions, start_state, final_states):
-        self.states = states
-        self.alphabet = alphabet
-        self.transitions = transitions
-        self.start_state = start_state
-        self.final_states = final_states
-
-
-class NFA:
-    def __init__(self, states, alphabet, transitions, start_state, final_states):
-        self.states = states
-        self.alphabet = alphabet
-        self.transitions = transitions
-        self.start_state = start_state
-        self.final_states = final_states
-
-    def remove_epsilon_transitions(self) -> None:
-        pass
-
-    def remove_unattainable_states(self) -> None:
-        pass
-    
-    def to_DFA(self) -> DFA:
-        return DFA()
-
-    def epsilon_closures(self):
-       pass
+        for final_state in dfa.final_states:
+            self.assertIn(final_state, dfa.states)
 
