@@ -53,3 +53,6 @@ class TestNFA(unittest.TestCase):
         for final_state in dfa.final_states:
             self.assertIn(final_state, dfa.states)
 
+
+if __name__ == "__main__":
+    unittest.main()
