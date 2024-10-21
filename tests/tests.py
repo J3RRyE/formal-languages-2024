@@ -1,5 +1,5 @@
 import unittest
-from automat import RegularExpression, State, Transition, NFA, DFA, CDFA, Alphabet
+from src.automat import RegularExpression, State, Transition, NFA, DFA, CDFA, Alphabet
 
 
 class TestRegularExpression(unittest.TestCase):
