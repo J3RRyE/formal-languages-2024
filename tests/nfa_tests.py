@@ -1,5 +1,5 @@
 import unittest
-from automat import *
+from src.automat import *
 
 class TestNFA(unittest.TestCase):
     def setUp(self):
