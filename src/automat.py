@@ -1,3 +1,4 @@
+from audioop import reverse
 from collections import deque, defaultdict
 from itertools import product
 import copy
@@ -65,14 +66,14 @@ class RegularExpression:
         """
         stack = []  # Stack to hold intermediate NFAs.
 
-        def create_basic_nfa(symbol):
+        def create_basic_nfa(symbol, number):
             """
             Creates a basic NFA for a single symbol.
 
             :param symbol: The input symbol for the transition.
             :return: An NFA with two states connected by the symbol.
             """
-            s1, s2 = State(0), State(1)  # Create two states.
+            s1, s2 = State(2 * number), State(2 * number + 1)  # Create two states.
             return NFA(
                 states=[s1, s2],
                 alphabet=Alphabet([symbol]),
@@ -82,9 +83,9 @@ class RegularExpression:
             )
 
         # Iterate over each token in the RPN expression.
-        for char in self.rpn.split():
+        for i, char in enumerate(self.rpn.split()):
             if char.isalpha():  # Create a basic NFA for alphabet symbols.
-                stack.append(create_basic_nfa(char))
+                stack.append(create_basic_nfa(char, i))
             elif char == '.':  # Concatenation operation.
                 nfa2 = stack.pop()
                 nfa1 = stack.pop()
@@ -95,8 +96,8 @@ class RegularExpression:
             elif char == '+':  # Union operation.
                 nfa2 = stack.pop()
                 nfa1 = stack.pop()
-                new_start = State(-1)  # New start state.
-                new_final = State(-2)  # New final state.
+                new_start = State(2 * i)  # New start state.
+                new_final = State(2 * i + 1)  # New final state.
                 # Create epsilon transitions for the union.
                 transitions = [
                     Transition(new_start, nfa1.start_state, "ε"),
@@ -114,8 +115,8 @@ class RegularExpression:
                 ))
             elif char == '*':  # Kleene star operation.
                 nfa = stack.pop()
-                new_start = State(-1)  # New start state.
-                new_final = State(-2)  # New final state.
+                new_start = State(2 * i)  # New start state.
+                new_final = State(2 * i + 1)  # New final state.
                 # Create epsilon transitions for the Kleene star.
                 transitions = [
                     Transition(new_start, nfa.start_state, "ε"),
@@ -167,6 +168,42 @@ class State:
         :return: True if the states have the same ID, otherwise False.
         """
         return isinstance(other, State) and self.id == other.id
+
+    def __gt__(self, other):
+        """
+        Compares if this State object's ID is greater than another State's ID.
+
+        :param other: The other state to compare with.
+        :return: True if this state's ID is greater than the other state's ID, otherwise False.
+        """
+        return self.id > other.id
+
+    def __ge__(self, other):
+        """
+        Compares if this State object's ID is greater than or equal to another State's ID.
+
+        :param other: The other state to compare with.
+        :return: True if this state's ID is greater than or equal to the other state's ID, otherwise False.
+        """
+        return self.id >= other.id
+
+    def __lt__(self, other):
+        """
+        Compares if this State object's ID is less than another State's ID.
+
+        :param other: The other state to compare with.
+        :return: True if this state's ID is less than the other state's ID, otherwise False.
+        """
+        return self.id < other.id
+
+    def __le__(self, other):
+        """
+        Compares if this State object's ID is less than or equal to another State's ID.
+
+        :param other: The other state to compare with.
+        :return: True if this state's ID is less than or equal to the other state's ID, otherwise False.
+        """
+        return self.id <= other.id
 
     def __hash__(self):
         """
@@ -239,7 +276,7 @@ class Transition:
 
         :return: The hash value of the transition.
         """
-        return hash(self.state_out.id) ** 17 + hash(self.state_in) ** 5 % 10000009
+        return hash(self.state_out.id) * 17 + hash(self.state_in) ** 5 % 10000009
 
     def __iter__(self):
         """
@@ -330,9 +367,6 @@ class DFA:
                 if not any(t.state_out == state and t.word == letter for t in self.transitions):
                     new_transitions.append(Transition(state, trap_state, letter))
 
-        # Add self-loops on the trap state for all alphabet symbols.
-        for letter in self.alphabet.letters:
-            new_transitions.append(Transition(trap_state, trap_state, letter))
 
         # Return the complete DFA with the trap state and all transitions.
         return CDFA(
@@ -537,68 +571,73 @@ class CDFA:
 
         :return: A new CDFA that is the minimized version of this CDFA.
         """
-        # Initial partition: final states and non-final states
-        P = [set(self.final_states), set(self.states) - set(self.final_states)]
-        W = [set(self.final_states)]  # Worklist for refinement
+        states_id = {state: i for i, state in enumerate(self.states)}
+        for transition in self.transitions:
+            transition.state_out = State(states_id[transition.state_out])
+            transition.state_in = State(states_id[transition.state_in])
 
-        def find_transitions(state, letter):
-            """Find the state transitioned to from a given state using a specific letter."""
-            for t in self.transitions:
-                if t.state_out == state and t.word == letter:
-                    return t.state_in
-            return None
+        for state in self.states:
+            state = State(states_id[state])
 
-        # While there are sets to process in W
-        while W:
-            A = W.pop()
+        for state in self.final_states:
+            state = State(states_id[state])
 
-            for letter in self.alphabet.letters:
-                X = {state for state in self.states if find_transitions(state, letter) in A}
+        self.start_state = State(states_id[self.start_state])
+        is_final_state = [True if state in self.final_states else False for state in sorted(self.states)]
 
-                new_P = []
-                for Y in P:
-                    intersection = X & Y
-                    difference = Y - X
+        def build_table(n, is_final_states, reverse_transitionss):
+            queue = deque()
+            marked_tmp = [[False] * n] * n
+            for i in range(n):
+                for j in range(n):
+                    if not marked_tmp[i][j] and is_final_states[i] != is_final_states[j]:
+                        marked_tmp[i][j] = marked_tmp[j][i] = True
+                        queue.append((i, j))
 
-                    if intersection and difference:
-                        new_P.extend([intersection, difference])
-                        # Adjust worklist if Y was split
-                        if Y in W:
-                            W.remove(Y)
-                            W.extend([intersection, difference])
-                        else:
-                            W.append(intersection if len(intersection) <= len(difference) else difference)
-                    else:
-                        new_P.append(Y)
+            while not queue:
+                u, v = queue.popleft()
+                for c in self.alphabet:
+                    for r in reverse_transitionss[u][c]:
+                        for s in reverse_transitionss[v][c]:
+                            if not marked_tmp[r][s]:
+                                marked_tmp[r][s] = marked_tmp[s][r] = True
+                                queue.append((r, s))
+            return marked_tmp
 
-                P = new_P  # Update partition
+        reverse_transitions = { state: { letter : set() for letter in self.alphabet} for state in self.states }
 
-        # Create state mapping for minimized states
-        state_mapping = {frozenset(group): State(i) for i, group in enumerate(P)}
+        for (state_in, state_out, letter) in self.transitions:
+            reverse_transitions[state_in][letter].add(state_out)
 
-        # Create new transitions based on minimized states
-        new_transitions = []
-        for group in P:
-            representative = next(iter(group))
-            new_state = state_mapping[frozenset(group)]
+        marked = build_table(len(self.states), is_final_state, reverse_transitions)
+        component = [-1] * len(self.states)
 
-            for letter in self.alphabet.letters:
-                target_state = find_transitions(representative, letter)
-                if target_state:
-                    target_group = next(g for g in P if target_state in g)
-                    new_transitions.append(Transition(new_state, state_mapping[frozenset(target_group)], letter))
+        for i in range(len(self.states)):
+            if not marked[0][i]:
+                component[i] = 0
 
-        # Determine new start and final states
-        new_start_state = state_mapping[frozenset(next(g for g in P if self.start_state in g))]
-        new_final_states = [state_mapping[frozenset(g)] for g in P if g & set(self.final_states)]
+        components_count = 0
+        for i in range(len(self.states)):
+            if component[i] == -1:
+                components_count += 1
+                component[i] = components_count
+                for j in range(i + 1, len(self.states)):
+                    if not marked[i][j]:
+                        component[j] = components_count
 
-        return CDFA(
-            states=list(state_mapping.values()),
-            alphabet=self.alphabet,
-            transitions=new_transitions,
-            start_state=new_start_state,
-            final_states=new_final_states
-        )
+        new_states = list(set([State(i) for i in component]))
+        new_start_state = State(component[states_id[self.start_state]])
+        new_final_states = list(set([State(component[states_id[i]]) for i in self.final_states]))
+        new_transitions = list(set([Transition(State(component[states_id[i]]),
+                                               State(component[states_id[j]]),
+                                               letter)
+                                                for (i, j, letter) in self.transitions]))
+
+        return CDFA(states=new_states,
+                    alphabet=self.alphabet,
+                    transitions=new_transitions,
+                    start_state=new_start_state,
+                    final_states=new_final_states)
 
     def complement(self):
         """
@@ -609,11 +648,11 @@ class CDFA:
         new_final_states = [state for state in self.states if state not in self.final_states]
 
         return CDFA(
-            states=self.states,
-            alphabet=self.alphabet,
-            transitions=self.transitions,
-            start_state=self.start_state,
-            final_states=new_final_states
+            states=copy.deepcopy(self.states),
+            alphabet=copy.deepcopy(self.alphabet),
+            transitions=copy.deepcopy(self.transitions),
+            start_state=copy.deepcopy(self.start_state),
+            final_states=copy.deepcopy(new_final_states)
         )
 
     def to_regex(self):
