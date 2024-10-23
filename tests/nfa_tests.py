@@ -6,11 +6,30 @@ class TestRegularExpression(unittest.TestCase):
     def setUp(self):
         self.regex = RegularExpression("(ab + c*.(l + d)*)*")
         self.rpn = self.regex.regex_to_rpn()
+        self.nfa = self.regex.rpn_to_nfa()
 
     def test_regex_to_rpn(self):
         """Test conversion of regex to Reverse Polish Notation."""
         self.assertEqual(self.rpn, "ab c * l d + * . + *")
 
+    def test_rpn_to_nfa_properties(self):
+        """Test the properties of the NFA generated from RPN."""
+        self.assertGreaterEqual(len(self.nfa.states), 1)
+
+        self.assertIsNotNone(self.nfa.start_state)
+        self.assertIn(self.nfa.start_state, self.nfa.states)
+
+        self.assertGreaterEqual(len(self.nfa.final_states), 1)
+        for state in self.nfa.final_states:
+            self.assertIn(state, self.nfa.states)
+
+        self.assertGreater(len(self.nfa.transitions), 0)
+
+    def test_nfa_transition_words(self):
+        """Ensure the NFA transitions contain valid symbols or epsilon."""
+        valid_symbols = {'ab', 'c', 'l', 'd', 'ε'}
+        for transition in self.nfa.transitions:
+            self.assertIn(transition.word, valid_symbols)
 
 class TestNFA(unittest.TestCase):
     def setUp(self):
