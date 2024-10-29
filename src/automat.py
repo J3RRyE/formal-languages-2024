@@ -367,6 +367,13 @@ class DFA:
                 if not any(t.state_out == state and t.word == letter for t in self.transitions):
                     new_transitions.append(Transition(state, trap_state, letter))
 
+        # Clean isolated vertices
+        count = {state: 0 for state in self.states}
+        for (state_out, state_in, word) in self.transitions:
+            count[state_in] += 1
+        for (state, number) in count.items():
+            if number == 0:
+                self.states.pop(state)
 
         # Return the complete DFA with the trap state and all transitions.
         return CDFA(
