@@ -633,7 +633,7 @@ class CDFA:
                         component[j] = components_count
 
         new_states = list(set([State(i) for i in component]))
-        new_start_state = State(component[states_id[self.start_state]])
+        new_start_state = State(component[self.start_state])
         new_final_states = list(set([State(component[states_id[i]]) for i in self.final_states]))
         new_transitions = list(set([Transition(State(component[states_id[i]]),
                                                State(component[states_id[j]]),
