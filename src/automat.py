@@ -583,11 +583,11 @@ class CDFA:
             transition.state_out = State(states_id[transition.state_out])
             transition.state_in = State(states_id[transition.state_in])
 
-        for state in self.states:
-            state = State(states_id[state])
+        for i in range(len(self.states)):
+            self.states[i] = State(states_id[self.states[i]])
 
-        for state in self.final_states:
-            state = State(states_id[state])
+        for i in range(len(self.final_states)):
+            self.final_states[i] = State(states_id[self.final_states[i]])
 
         self.start_state = State(states_id[self.start_state])
         is_final_state = [True if state in self.final_states else False for state in sorted(self.states)]
