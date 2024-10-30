@@ -91,6 +91,10 @@ class RegularExpression:
                 nfa1 = stack.pop()
                 # Extend transitions of nfa1 with those of nfa2.
                 nfa1.transitions.extend(nfa2.transitions)
+                nfa1.transitions.extend([Transition(nfa1.final_states[i], nfa2.start_state, 'ε')
+                                                                    for i in range(len(nfa1.final_states))])
+                nfa1.alphabet.letters.extend(nfa2.alphabet.letters)
+                nfa1.states.extend(nfa2.states)
                 nfa1.final_states = nfa2.final_states  # Update final states.
                 stack.append(nfa1)
             elif char == '+':  # Union operation.
@@ -115,21 +119,24 @@ class RegularExpression:
                 ))
             elif char == '*':  # Kleene star operation.
                 nfa = stack.pop()
-                new_start = State(2 * i)  # New start state.
+                new_pre_final = State(2 * i)  # New pre final state.
                 new_final = State(2 * i + 1)  # New final state.
                 # Create epsilon transitions for the Kleene star.
                 transitions = [
-                    Transition(new_start, nfa.start_state, "ε"),
-                    Transition(nfa.final_states[0], new_final, "ε"),
-                    Transition(new_start, new_final, "ε"),  # Direct transition.
-                    Transition(nfa.final_states[0], nfa.start_state, "ε")  # Loop back to start.
+                    Transition(nfa.start_state, new_final, "ε"),
+                    Transition(new_pre_final, new_final, "ε"),
+                    Transition(new_pre_final, nfa.start_state, "ε")
                 ]
+
+                transitions.extend(
+                    [Transition(i, new_pre_final, "ε") for i in nfa.final_states]
+                )
                 # Build the new NFA with added transitions.
                 stack.append(NFA(
-                    states=[new_start, new_final] + nfa.states,
+                    states=[new_pre_final, new_final] + nfa.states,
                     alphabet=nfa.alphabet,
                     transitions=transitions + nfa.transitions,
-                    start_state=new_start,
+                    start_state=nfa.start_state,
                     final_states=[new_final]
                 ))
 
@@ -270,6 +277,7 @@ class Transition:
         """
         return self.__repr__() != other.__repr__()
 
+
     def __hash__(self):
         """
         Computes a hash value for the transition using the states and a unique formula.
@@ -310,6 +318,9 @@ class Alphabet:
         :return: An iterator over the symbols.
         """
         return iter(self.letters)
+
+    def __add__(self, other):
+        return Alphabet(self.letters + other.letters)
 
     def __repr__(self):
         """
@@ -356,10 +367,10 @@ class DFA:
         """
         # Create a trap state that catches missing transitions.
         trap_state = State(len(self.states))
-        self.states.append(trap_state)
 
         # List to store new transitions including those to the trap state.
         new_transitions = list(self.transitions)
+        self.states.append(trap_state)
 
         # Add transitions to the trap state for missing transitions.
         for state in self.states:
@@ -368,12 +379,23 @@ class DFA:
                     new_transitions.append(Transition(state, trap_state, letter))
 
         # Clean isolated vertices
-        count = {state: 0 for state in self.states}
+        count = {state: [0, 0] for state in self.states}
         for (state_out, state_in, word) in self.transitions:
-            count[state_in] += 1
+            count[state_in][0] += 1
+            count[state_out][1] += 1
+
         for (state, number) in count.items():
-            if number == 0:
-                self.states.pop(state)
+            if number[0] + number[1] == 0:
+                for i in range(len(new_transitions)):
+                    if (new_transitions[i].state_out == state) | (new_transitions[i].state_in == state):
+                        new_transitions[i] = ''
+                self.states.remove(state)
+
+        new_transitions = list(set(new_transitions))
+        for i in range(len(new_transitions)):
+            if new_transitions[i] == '':
+                new_transitions.pop(i)
+                break
 
         # Return the complete DFA with the trap state and all transitions.
         return CDFA(
@@ -579,9 +601,9 @@ class CDFA:
         :return: A new CDFA that is the minimized version of this CDFA.
         """
         states_id = {state: i for i, state in enumerate(self.states)}
-        for transition in self.transitions:
-            transition.state_out = State(states_id[transition.state_out])
-            transition.state_in = State(states_id[transition.state_in])
+        for i in range(len(self.transitions)):
+            self.transitions[i].state_out = State(states_id[self.transitions[i].state_out])
+            self.transitions[i].state_in = State(states_id[self.transitions[i].state_in])
 
         for i in range(len(self.states)):
             self.states[i] = State(states_id[self.states[i]])
@@ -601,7 +623,7 @@ class CDFA:
                         marked_tmp[i][j] = marked_tmp[j][i] = True
                         queue.append((i, j))
 
-            while not queue:
+            while queue:
                 u, v = queue.popleft()
                 for c in self.alphabet:
                     for r in reverse_transitionss[u][c]:
@@ -611,10 +633,10 @@ class CDFA:
                                 queue.append((r, s))
             return marked_tmp
 
-        reverse_transitions = { state: { letter : set() for letter in self.alphabet} for state in self.states }
+        reverse_transitions = { state.id: { letter : set() for letter in self.alphabet} for state in self.states }
 
         for (state_in, state_out, letter) in self.transitions:
-            reverse_transitions[state_in][letter].add(state_out)
+            reverse_transitions[state_in.id][letter].add(state_out.id)
 
         marked = build_table(len(self.states), is_final_state, reverse_transitions)
         component = [-1] * len(self.states)
@@ -633,7 +655,7 @@ class CDFA:
                         component[j] = components_count
 
         new_states = list(set([State(i) for i in component]))
-        new_start_state = State(component[self.start_state])
+        new_start_state = State(component[self.start_state.id])
         new_final_states = list(set([State(component[states_id[i]]) for i in self.final_states]))
         new_transitions = list(set([Transition(State(component[states_id[i]]),
                                                State(component[states_id[j]]),
@@ -662,76 +684,58 @@ class CDFA:
             final_states=copy.deepcopy(new_final_states)
         )
 
-    def to_regex(self):
+    def to_regex(self) -> str:
         """
-        Converts the CDFA to an equivalent regular expression.
+        Converts the CDFA into an equivalent regular expression using state elimination.
 
-        :return: A string representing the regular expression for the CDFA.
+        :return: A string representing the regular expression equivalent to the CDFA.
         """
-        new_start = 'NEW_START'
-        new_final = 'NEW_FINAL'
-        all_states = copy.deepcopy(self.states)
-        all_states.append(new_start)
-        all_states.append(new_final)
 
-        # Initialize regex transitions
-        regex_trans = {state: {state2: '' for state2 in all_states} for state in all_states}
+        if len(self.states) == 1:
+            # Collect all transition labels for the self-loops on the single state.
+            labels = [t.word for t in self.transitions if
+                      t.state_in == self.states[0] and t.state_out == self.states[0]]
+            # Join labels with '+' for union and apply Kleene star.
+            return f"({' + '.join(labels)})*"
 
-        # Set transition from new start to actual start
-        regex_trans[new_start][self.start_state] = 'ε'
+        # Step 1: Initialize a table to hold regex expressions between states.
+        n = len(self.states)
+        R = [[None] * n for _ in range(n)]  # R[i][j] holds the regex from state i to state j.
 
-        # Fill in the transitions for the existing transitions
-        for (src, dest, symbol) in self.transitions:
-            if regex_trans[src][dest]:
-                regex_trans[src][dest] = f"({regex_trans[src][dest]} + {symbol})"
-            else:
-                regex_trans[src][dest] = symbol
+        # Step 2: Populate the table with initial transitions (direct transitions or epsilon).
+        for i, state in enumerate(self.states):
+            for j, next_state in enumerate(self.states):
+                # Collect all transitions from state `i` to state `j`.
+                labels = [t.word for t in self.transitions if t.state_out == state and t.state_in == next_state]
+                if labels:
+                    R[i][j] = '+'.join(labels)  # Join multiple transition symbols with `+`.
+                elif i == j:
+                    R[i][j] = 'ε'  # Self-loop as epsilon if no other transition exists.
+                else:
+                    R[i][j] = ''  # No direct transition between these states.
 
-        # Set transitions from final states to new final state
-        for final in self.final_states:
-            if regex_trans[final][new_final]:
-                regex_trans[final][new_final] = f"({regex_trans[final][new_final]} + ε)"
-            else:
-                regex_trans[final][new_final] = 'ε'
+        # Step 3: Perform state elimination.
+        for k in range(n):
+            for i in range(n):
+                for j in range(n):
+                    # Update R[i][j] to include paths that go through state `k`.
+                    direct = R[i][j]  # Direct path from i to j.
+                    via_k = f"{R[i][k]}({R[k][k]})*{R[k][j]}"  # Path through k.
 
-        # States to eliminate from the regex transitions
-        states_to_eliminate = set(all_states) - {new_start, new_final}
+                    # Use union to combine paths.
+                    if direct:
+                        R[i][j] = f"({direct})+({via_k})" if via_k else direct
+                    else:
+                        R[i][j] = via_k
 
-        for state in list(states_to_eliminate):
-            R_ii = regex_trans[state][state]
-            if R_ii:
-                R_ii = f"({R_ii})*"
-            else:
-                R_ii = ''
+        # Step 4: The final regular expression is the path from the start state to any final state.
+        start_index = self.states.index(self.start_state)
+        final_indices = [self.states.index(f) for f in self.final_states]
 
-            for src in all_states:
-                for dest in all_states:
-                    if regex_trans[src][state] and regex_trans[state][dest]:
-                        R_src_state = regex_trans[src][state]
-                        R_state_dest = regex_trans[state][dest]
-                        if R_ii:
-                            new_expr = f"{R_src_state}{R_ii}{R_state_dest}"
-                        else:
-                            new_expr = f"{R_src_state}{R_state_dest}"
+        # Build the regex by combining paths to all final states.
+        regex = '+'.join(R[start_index][f] for f in final_indices)
 
-                        if regex_trans[src][dest]:
-                            regex_trans[src][dest] = f"({regex_trans[src][dest]} + {new_expr})"
-                        else:
-                            regex_trans[src][dest] = new_expr
-
-            # Remove state from transitions
-            for s in all_states:
-                regex_trans[s].pop(state, None)
-            regex_trans.pop(state, None)
-            all_states.remove(state)
-
-        # Final regex from new start to new final
-        final_regex = regex_trans[new_start][new_final]
-
-        # Clean up the regex
-        final_regex = self._cleanup_regex(final_regex)
-
-        return final_regex
+        return regex.replace('ε', '')  # Optional: Remove ε if not needed for readability.
 
     def _cleanup_regex(self, regex):
         """
