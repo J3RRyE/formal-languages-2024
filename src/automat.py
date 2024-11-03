@@ -392,10 +392,10 @@ class DFA:
                 self.states.remove(state)
 
         new_transitions = list(set(new_transitions))
-        for i in range(len(new_transitions)):
-            if new_transitions[i] == '':
-                new_transitions.pop(i)
-                break
+        try:
+            new_transitions.remove('')
+        except:
+            pass
 
         # Return the complete DFA with the trap state and all transitions.
         return CDFA(
