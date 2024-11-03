@@ -395,10 +395,12 @@ class DFA:
         for state in self.states:
             if state not in used:
                 for i in range(len(new_transitions)):
-                    if new_transitions[i] != '' and (new_transitions[i].state_in == state or
+                    if str(new_transitions[i]) != '' and (new_transitions[i].state_in == state or
                                                        new_transitions[i].state_out == state):
                         new_transitions[i] = ''
                 self.states.remove(state)
+                if state in self.final_states:
+                    self.final_states.remove(state)
 
         new_transitions = list(set(new_transitions))
         try:
