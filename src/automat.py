@@ -396,12 +396,12 @@ class DFA:
             if state not in used:
                 for i in range(len(new_transitions)):
                     if new_transitions[i].state_in == state or new_transitions[i].state_out == state:
-                        new_transitions[i] = ''
+                        new_transitions[i] = None
                 self.states.remove(state)
 
         new_transitions = list(set(new_transitions))
         try:
-            new_transitions.remove('')
+            new_transitions.remove(None)
         except:
             pass
 
