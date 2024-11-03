@@ -402,7 +402,7 @@ class DFA:
 
         new_transitions = list(set(new_transitions))
         try:
-            new_transitions.remove(None)
+            new_transitions.remove('')
         except:
             pass
 
