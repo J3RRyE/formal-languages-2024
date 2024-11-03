@@ -380,7 +380,7 @@ class DFA:
 
         # Clean isolated vertices
         count = {state: [0, 0] for state in self.states}
-        for (state_out, state_in, word) in self.transitions:
+        for (state_out, state_in, word) in new_transitions:
             count[state_in][0] += 1
             count[state_out][1] += 1
 
