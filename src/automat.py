@@ -369,7 +369,7 @@ class DFA:
         def dfs(graph, v, used):
             if v in used:
                 return
-            used.insert(v)
+            used.add(v)
             for vertex in graph[v]:
                 return dfs(graph, vertex, used)
 
