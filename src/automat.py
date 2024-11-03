@@ -381,11 +381,12 @@ class DFA:
         # Clean isolated vertices
         count = {state: [0, 0] for state in self.states}
         for (state_out, state_in, word) in new_transitions:
-            count[state_in][0] += 1
-            count[state_out][1] += 1
+            if state_in != state_out:
+                count[state_in][0] += 1
+                count[state_out][1] += 1
 
         for (state, number) in count.items():
-            if number[0] + number[1] == 0:
+            if number[0] == 0 + number[1] == 0:
                 for i in range(len(new_transitions)):
                     if (new_transitions[i].state_out == state) | (new_transitions[i].state_in == state):
                         new_transitions[i] = ''
