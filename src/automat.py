@@ -365,6 +365,14 @@ class DFA:
 
         :return: A complete DFA (CDFA) object with all possible transitions covered.
         """
+
+        def dfs(graph, v, used):
+            if v in used:
+                return
+            used.insert(v)
+            for vertex in graph[v]:
+                return dfs(graph, vertex, used)
+
         # Create a trap state that catches missing transitions.
         trap_state = State(len(self.states))
 
@@ -378,17 +386,16 @@ class DFA:
                 if not any(t.state_out == state and t.word == letter for t in self.transitions):
                     new_transitions.append(Transition(state, trap_state, letter))
 
-        # Clean isolated vertices
-        count = {state: [0, 0] for state in self.states}
+        used = set()
+        graph = {state: [] for state in self.states}
         for (state_out, state_in, word) in new_transitions:
-            if state_in != state_out:
-                count[state_in][0] += 1
-                count[state_out][1] += 1
+            graph[state_out].append(state_in)
 
-        for (state, number) in count.items():
-            if number[0] == 0 + number[1] == 0:
+        dfs(graph, self.start_state, used)
+        for state in self.states:
+            if state not in used:
                 for i in range(len(new_transitions)):
-                    if (new_transitions[i].state_out == state) | (new_transitions[i].state_in == state):
+                    if new_transitions[i].state_in == state or new_transitions[i].state_out == state:
                         new_transitions[i] = ''
                 self.states.remove(state)
 
