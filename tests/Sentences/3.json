@@ -1,0 +1,34 @@
+{
+    "mode": "SENTENCES",
+    "terminals": [
+        "a", "b", "c", "+", "*", "-", "(", ")"
+    ],
+    "non_terminals": [
+        "var", "expression", "oper"
+    ],
+    "start": "expression",
+    "rules": [
+        "expression -> expression oper expression",
+        "expression -> ( expression )",
+        "expression -> var",
+        "var -> a",
+        "var -> b",
+        "var -> c",
+        "oper -> +",
+        "oper -> -",
+        "oper -> *"
+    ],
+    "words": [
+        "a + b * ( a + c ) * a",
+        "a + a + a + a + a + a",
+        "( a + b ) * ( c * a * b ) + ( a )",
+        "a + b + a + * c"
+    ],
+    "answers": [
+        true,
+        true,
+        true,
+        false
+    ],
+    "name": "Составление выражения"
+}

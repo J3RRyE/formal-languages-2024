@@ -1,0 +1,32 @@
+{
+    "mode": "SENTENCES",
+    "terminals": [
+        "SELECT", "FROM", "WHERE", ",", "COLUMN_NAME", "AS", "ALIAS", "TABLE_NAME", "TABLE_NAME", "CRINGE_IAM_TIRED"
+    ],
+    "non_terminals": [
+        "query", "fields", "field", "table", "condition"
+    ],
+    "start": "query",
+    "rules": [
+        "query -> SELECT fields FROM table",
+        "query -> SELECT fields FROM table WHERE condition",
+        "fields -> field",
+        "fields -> fields , field",
+        "field -> COLUMN_NAME",
+        "field -> COLUMN_NAME AS ALIAS",
+        "table -> TABLE_NAME",
+        "table -> TABLE_NAME AS ALIAS",
+        "condition -> CRINGE_IAM_TIRED"
+    ],
+    "words": [
+        "SELECT COLUMN_NAME , COLUMN_NAME AS ALIAS FROM TABLE_NAME AS ALIAS",
+        "SELECT COLUMN_NAME FROM , WHERE CRINGE_IAM_TIRED",
+        "SELECT COLUMN_NAME , COLUMN_NAME AS ALIAS , COLUMN_NAME FROM TABLE_NAME WHERE CRINGE_IAM_TIRED"
+    ],
+    "answers": [
+        true,
+        false,
+        true
+    ],
+    "name": "Составление запроса"
+}

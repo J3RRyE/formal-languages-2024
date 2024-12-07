@@ -34,10 +34,10 @@ class Rule:
 class Grammatics:
     WORDS = 0
     SENTENCES = 1
-    def __init__(self, terminals: list[str], non_terminals: list[str], start_token: str, rules: list[Rule], regym: int):
+    def __init__(self, terminals: list[str], non_terminals: list[str], start_token: str, rules: list[Rule], mode: int):
         self.start_token = start_token
         
-        self.regym = regym
+        self.mode = mode
 
         self.terminals = set(terminals)
         self.non_terminals = set(non_terminals)

@@ -1,4 +1,4 @@
-from grammatics import Rule, Grammatics
+from src.grammatics import Rule, Grammatics
 
 class Early_Situation:
     '''
@@ -47,9 +47,9 @@ class Earley_Parser:
         self.start = "&"
         self.grammar.non_terminals.add(self.start)
 
-        if self.grammar.regym == Grammatics.WORDS:
+        if self.grammar.mode == Grammatics.WORDS:
             self.start_rule = Rule(self.start, self.grammar.start_token)
-        elif self.grammar.regym == Grammatics.SENTENCES:
+        elif self.grammar.mode == Grammatics.SENTENCES:
             self.start_rule = Rule(self.start, self.grammar.start_token.split())
 
         self.rules = {non_term : {Rule(rule.left, rule.right)\
@@ -123,3 +123,21 @@ class Earley_Parser:
         self.situation_sets_list[index].update(new_situation_set)
         return new_situation_set
 
+if __name__ == '__main__':
+    N, Sigma, P = map(int, input().split())
+    non_terminals = [char for char in input()]
+    terminals = [char for char in input()]
+
+    rules = [Rule.parse_rule_symbols(input()) for i in range(P)]
+
+    start_token = input()
+
+    grammar = Grammatics(terminals, non_terminals, start_token, rules, 0)
+
+    parser = Earley_Parser()
+    parser.fit(grammar)
+
+    tokens_number = int(input())
+    for i in range(tokens_number):
+        tokens = input().strip()
+        print("Yes" if parser.predict(tokens) else "No")

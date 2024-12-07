@@ -1,0 +1,19 @@
+{   
+    "mode": "WORDS",
+    "rules": [
+        "S -> c"
+    ],
+    "words": [
+        "",
+        "c",
+        "ab",
+        "abcdef"
+    ],
+    "answers": [
+        false,
+        true,
+        false,
+        false
+    ],
+    "name": "Easy test"
+}

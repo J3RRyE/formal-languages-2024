@@ -1,0 +1,21 @@
+{
+    "mode": "WORDS",
+    "rules": [
+        "S->CC",
+        "C->cC",
+        "C->d"
+    ],
+    "words": [
+        "cdcccccccd",
+        "dd",
+        "ccccccc",
+        "ddccccccd"
+    ],
+    "answers": [
+        true,
+        true,
+        false,
+        false
+    ],
+    "name": "Case 2"
+}

@@ -1,0 +1,27 @@
+{
+    "mode": "WORDS",
+    "rules": [
+        "S -> ",
+        "S -> a",
+        "S -> b",
+        "S -> aSa",
+        "S -> bSb"
+    ],
+    "words": [
+        "",
+        "abaaba",
+        "ababa",
+        "a",
+        "aaaabbb",
+        "bababa"
+    ],
+    "answers": [
+        true,
+        true,
+        true,
+        true,
+        false,
+        false
+    ],
+    "name": "Палиндром test"
+}

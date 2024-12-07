@@ -1,0 +1,18 @@
+{   
+    "mode": "WORDS",
+    "rules": [
+        "S->aSbS",
+        "S->"
+    ],
+    "words": [
+        "",
+        "aababb",
+        "aabbba"
+    ],
+    "answers": [
+        true,
+        true,
+        false
+    ],
+    "name": "Case 1"
+}

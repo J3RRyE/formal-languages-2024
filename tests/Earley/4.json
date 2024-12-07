@@ -1,0 +1,29 @@
+{
+    "mode": "WORDS",
+    "rules": [
+        "S -> ",
+        "S -> AS",
+        "S -> BS",
+        "S -> CS",
+        "A -> aaSb",
+        "B -> bSaa",
+        "C -> aSbSa"
+    ],
+    "words": [
+        "",
+        "aabaabababaa",
+        "ab",
+        "ababbaaaa",
+        "aaabbb",
+        "baa"
+    ],
+    "answers": [
+        true,
+        true,
+        false,
+        true,
+        false,
+        true
+    ],
+    "name": "Homework grammar test"
+}

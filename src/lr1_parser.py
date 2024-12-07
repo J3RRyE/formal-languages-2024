@@ -101,9 +101,9 @@ class LR1_Parser:
         self.start = "&"
         self.grammar.non_terminals.add(self.start)
 
-        if self.grammar.regym == Grammatics.WORDS:
+        if self.grammar.mode == Grammatics.WORDS:
             self.start_rule = Rule(self.start, self.grammar.start_token, len(self.grammar.rules))
-        elif self.grammar.regym == Grammatics.SENTENCES:
+        elif self.grammar.mode == Grammatics.SENTENCES:
             self.start_rule = Rule(self.start, self.grammar.start_token.split(), len(self.grammar.rules))
 
         self.grammar.rules.add(self.start_rule)
@@ -281,3 +281,21 @@ class LR1_Parser:
                         continue
                     self.table[check_vertex_index][token] = default_table_vert
 
+if __name__ == '__main__':
+    N, Sigma, P = map(int, input().split())
+    non_terminals = [char for char in input()]
+    terminals = [char for char in input()]
+
+    rules = [Rule.parse_rule_symbols(input()) for i in range(P)]
+
+    start_token = input()
+
+    grammar = Grammatics(terminals, non_terminals, start_token, rules, 0)
+
+    parser = LR1_Parser()
+    parser.fit(grammar)
+
+    tokens_number = int(input())
+    for i in range(tokens_number):
+        tokens = input().strip()
+        print("Yes" if parser.predict(tokens) else "No")
