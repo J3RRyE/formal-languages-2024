@@ -7,3 +7,4 @@ main -> stable branch of whole project
 
 to start testing just install requirements.txt and run main.py
 
+if you want test code by yourself with stdin just start parsers files manually
