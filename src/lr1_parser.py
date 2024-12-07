@@ -1,4 +1,4 @@
-from grammatics import Rule, Grammatics
+from src.grammatics import Rule, Grammatics
 
 class LR1_Situation:
     '''
